@@ -254,7 +254,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         out = gamma*x_norm + beta # scale and shift the normalized input
 
         # necessary values for backprop calculations
-        cache = (x, sample_mean, sample_var, x_norm, gamma, beta, eps)
+        cache = (x, running_mean, running_var, x_norm, gamma, beta, eps)
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
@@ -291,8 +291,58 @@ def batchnorm_backward(dout, cache):
     # results in the dx, dgamma, and dbeta variables.                           #
     #############################################################################
 
-    
+    (x, sample_mean, sample_var, x_norm, gamma, beta, eps) = cache
 
+    # shape of output
+    N, D = dout.shape
+
+    # the equations are all in reference to an attached hand-drawn computational
+    # graph
+
+    # eq 1.1
+    # sum the output gradient across all samples
+    dbeta = np.sum(dout, axis = 0)
+
+    # eq 1.2
+    # sum the hadamard product of dout and x_norm
+    dgamma = np.sum(dout*x_norm, axis = 0)
+
+    # eq 1.3
+    dy_1 = dout * gamma
+
+    # eq 1.4
+    a = 1/(np.sqrt(sample_var + eps)) # we could've used the cache to share a aswell
+    dy_2 = np.sum(dy_1 * a)
+
+    # eq 1.5
+    b = (x - sample_mean)
+    dy_3 = dy_1 * b
+
+    # eq 1.6
+    a = np.sqrt(sample_var + eps)
+    dy_3 = -1/(a**2)*dy_2
+
+    # eq 1.7
+    dy_4 = 0.5 * 1 /(np.sqrt(sample_var + eps))*dy_3
+    
+    # eq 1.8
+    dy_5 = 1/N * np.ones((N,D)) * dy_4
+
+    # eq 1.9
+    a = x - sample_mean
+    dy_6 = 2*a*dy_5
+
+    # eq 1.91
+    dy_7 = dy_6+dy_3
+
+    # eq 1.92
+    dy_8 = -np.sum(dy_7)
+
+    #eq 1.93
+    dy_9 = 1/N * np.ones((N,D)) * dy_8
+
+    #eq 1.94
+    dx = dy_9+dy_7
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
