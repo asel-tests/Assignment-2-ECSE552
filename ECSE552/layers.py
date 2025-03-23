@@ -254,7 +254,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         out = gamma*x_norm + beta # scale and shift the normalized input
 
         # necessary values for backprop calculations
-        cache = (x, sample_mean, sample_var, x_norm, gamma, beta, eps)
+        cache = (x, running_mean, running_var, x_norm, gamma, beta, eps)
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
@@ -291,10 +291,51 @@ def batchnorm_backward(dout, cache):
     # results in the dx, dgamma, and dbeta variables.                           #
     #############################################################################
 
-    
+    # retrieve forward propagation variables from cache
+    (x, sample_mean, sample_var, x_norm, gamma, beta, eps) = cache
 
+    # retreive num samples and num features
+    N, D = x.shape
+
+    # eq 1.1
+    dbeta = np.sum(dout, axis = 0)
+
+    # eq 1.2
+    dgamma = np.sum(dout*x_norm, axis = 0)
+
+    # eq 1.3
+    dx_norm = gamma*dout
+
+    # eq 1.4
+    d1_4 = dx_norm*(1 / np.sqrt(sample_var + eps)) 
+
+    # eq 1.5
+    d1_5 = np.sum(dx_norm*(x - sample_mean), axis = 0)
+
+    # eq 1.51
+    d1_51 = -d1_5/(sample_var + eps)
+
+    # eq 1.52
+    d1_52 = 0.5 * 1 / (np.sqrt(sample_var + eps)) * d1_51
+
+    # eq 1.53
+    d1_53 = 1/N * np.ones((N,D)) * d1_52
+
+    # eq 1.54
+    d1_54 = 2*(x - sample_mean) * d1_53
+
+    # eq 1.6
+    dmu = -np.sum((d1_4 + d1_54), axis = 0)
+
+    # eq 1.7
+    d1_7 = d1_4 + d1_54
+
+    # eq 1.8
+    d1_8 = 1/N * np.ones((N,D))*dmu
+
+    # eq 1.9
+    dx = d1_7 + d1_8
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
-
     return dx, dgamma, dbeta
