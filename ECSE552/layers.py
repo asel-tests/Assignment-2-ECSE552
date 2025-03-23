@@ -255,7 +255,6 @@ def batchnorm_forward(x, gamma, beta, bn_param):
 
         # necessary values for backprop calculations
         cache = (x, running_mean, running_var, x_norm, gamma, beta, eps)
-        cache = (x, running_mean, running_var, x_norm, gamma, beta, eps)
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
