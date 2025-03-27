@@ -91,6 +91,40 @@ def conv_forward_naive(x, w, b, conv_param):
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
+
+    # extract shapes
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+
+    # extract stride and pad
+    stride, pad = conv_param["stride"], conv_param["pad"]
+
+    # pad the input with zeros
+    x_padded = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode='constant')
+
+
+    # compute shape of output data using floor division
+    H_prime = 1 + (H + 2 * pad - HH) // stride
+    W_prime = 1 + (W + 2 * pad - WW) // stride
+
+    # initialize the output
+    out = np.zeros((N, F, H_prime, W_prime))
+
+    # perform convolution
+    for n in range(N): # iterate over the samples
+        for f in range(F): # iterate over the filters
+            for i in range(H_prime): # iterate over the output height
+                for j in range(W_prime): # iterate over the output width
+                  # defines the receptive field
+                  h_start = i * stride
+                  h_end = h_start + HH
+                  
+                  w_start = j * stride
+                  w_end = w_start + WW
+
+                  # convolve
+                  out[n, f, i, j] = np.sum(x_padded[n, :, h_start:h_end, w_start:w_end] * w[f, :, :, :]) + b[f]
+
     cache = (x, w, b, conv_param)
     return out, cache
 
@@ -112,7 +146,46 @@ def conv_backward_naive(dout, cache):
     #############################################################################
     # TODO: Implement the convolutional backward pass.                          #
     #############################################################################
-    pass
+    # extract parameters
+    x, w, b, conv_param = cache
+    stride = conv_param["stride"]
+    pad = conv_param["pad"]
+
+    # extract shapes
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    _, _, H_prime, W_prime = dout.shape
+
+    # initialize gradients
+    dx = np.zeros_like(x)
+    dw = np.zeros_like(w)
+    db = np.zeros_like(b)
+
+    # pad input like in forward pass and initialize gradient
+    x_padded = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode='constant')
+    dx_padded = np.zeros_like(x_padded)
+
+    # compute db according to equation 1 (see notes)
+    db = np.sum(dout, axis = (0, 2, 3))
+
+    # calculate gradients
+    for n in range(N): # iterate over the samples
+        for f in range(F): # iterate over the filters
+            for i in range(H_prime): # iterate over the output height
+                for j in range(W_prime): # iterate over the output width
+                  # defines the receptive field
+                  h_start = i * stride
+                  h_end = h_start + HH
+                  
+                  w_start = j * stride
+                  w_end = w_start + WW
+
+                  # accumulate gradients
+                  dw[f] += x_padded[n, :, h_start:h_end, w_start:w_end] * dout[n, f, i, j]
+                  dx_padded[n, :, h_start:h_end, w_start:w_end] += w[f] * dout[n, f, i, j]
+    
+    # remove padding
+    dx = dx_padded[:, :, pad:-pad, pad:-pad] if pad > 0 else dx_padded
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
