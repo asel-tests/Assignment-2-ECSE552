@@ -80,18 +80,12 @@ def conv_forward_naive(x, w, b, conv_param):
       W' = 1 + (W + 2 * pad - WW) / stride
     - cache: (x, w, b, conv_param)
     """
-    out = None
     #############################################################################
     # TODO: Implement the convolutional forward pass.                           #
     # Hint: you can use the function np.pad for padding.                        #
     # Hint: You can also use im2col or im2col_indices see the file im2col.py    #
     #       for further information                                             #
     #############################################################################
-    pass
-    #############################################################################
-    #                             END OF YOUR CODE                              #
-    #############################################################################
-
     # extract shapes
     N, C, H, W = x.shape
     F, C, HH, WW = w.shape
@@ -101,7 +95,6 @@ def conv_forward_naive(x, w, b, conv_param):
 
     # pad the input with zeros
     x_padded = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode='constant')
-
 
     # compute shape of output data using floor division
     H_prime = 1 + (H + 2 * pad - HH) // stride
@@ -125,6 +118,9 @@ def conv_forward_naive(x, w, b, conv_param):
                   # convolve
                   out[n, f, i, j] = np.sum(x_padded[n, :, h_start:h_end, w_start:w_end] * w[f, :, :, :]) + b[f]
 
+    #############################################################################
+    #                             END OF YOUR CODE                              #
+    #############################################################################
     cache = (x, w, b, conv_param)
     return out, cache
 
@@ -181,7 +177,9 @@ def conv_backward_naive(dout, cache):
                   w_end = w_start + WW
 
                   # accumulate gradients
+                  # equation 2 (see notes)
                   dw[f] += x_padded[n, :, h_start:h_end, w_start:w_end] * dout[n, f, i, j]
+                  # equation 3 (see notes)
                   dx_padded[n, :, h_start:h_end, w_start:w_end] += w[f] * dout[n, f, i, j]
     
     # remove padding
