@@ -205,11 +205,42 @@ def max_pool_forward_naive(x, pool_param):
     - out: Output data
     - cache: (x, pool_param)
     """
-    out = None
     #############################################################################
     # TODO: Implement the max pooling forward pass                              #
     #############################################################################
-    pass
+    # extract shapes
+    N, C, H, W = x.shape
+
+    # extract parameters
+    pool_height = pool_param["pool_height"]
+    pool_width = pool_param["pool_width"]
+    stride = pool_param["stride"]
+
+    # calculate the dimensions of the output
+    H_prime = (H - pool_height) // stride + 1
+    W_prime = (W - pool_width) // stride + 1
+
+    # initialize the output array
+    out = np.zeros((N, C, H_prime, W_prime))
+
+    # iterate over the samples
+    for n in range(N):
+      # iterate over the channels
+        for c in range(C):
+          # iterate over the output height
+          for h in range(H_prime):
+            # iterate over the output width
+            for w in range(W_prime):
+              # defines the receptive field
+              h_start = h * stride
+              h_end = h_start + pool_height
+              
+              w_start = w * stride
+              w_end = w_start + pool_width
+
+              # extract the receptive field and apply max pooling
+              out[n, c, h, w] = np.max(x[n, c, h_start:h_end, w_start:w_end])
+
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -232,7 +263,43 @@ def max_pool_backward_naive(dout, cache):
     #############################################################################
     # TODO: Implement the max pooling backward pass                             #
     #############################################################################
-    pass
+    # retrieve the input and the pool parameters
+    x, pool_param = cache
+    pool_height = pool_param["pool_height"]
+    pool_width = pool_param["pool_width"]
+    stride = pool_param["stride"]
+
+    # extract shapes
+    N, C, H, W = x.shape
+    _, _, H_prime, W_prime = dout.shape
+
+    # initialize the gradient
+    dx = np.zeros_like(x)
+
+    # same as forward pass, iterate over the sampples
+    for n in range(N): 
+        # then over the channels
+        for c in range(C): 
+            # then over the output height
+            for h in range(H_prime): 
+                # then over the output width
+                for w in range(W_prime): 
+                    # defines the receptive field
+                    h_start = h * stride
+                    h_end = h_start + pool_height
+                    
+                    w_start = w * stride
+                    w_end = w_start + pool_width
+
+                    # extract the receptive field
+                    x_field = x[n, c, h_start:h_end, w_start:w_end]
+
+                    # find the index of the maximum value
+                    max_index = np.unravel_index(np.argmax(x_field), x_field.shape)
+
+                    # backpropagate the gradient
+                    dx[n, c, h_start:h_end, w_start:w_end][max_index] = dout[n, c, h, w]
+    
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
