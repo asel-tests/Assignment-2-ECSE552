@@ -65,7 +65,20 @@ def rnn_step_backward(dnext_h, cache):
   # HINT: For the tanh function, you can compute the local derivative in terms #
   # of the output value from tanh.                                             #
   ##############################################################################
-  pass
+  # retreive from cache
+  x, prev_h, Wx, Wh, b, next_h = cache
+
+  # calculate the gradient of the tanh activation function
+  da = dnext_h * (1 - next_h**2) # eq 1
+
+  # calculate the gradients
+  dx = np.dot(da, Wx.T) # w.r.t x, eq 2
+  dWx = np.dot(x.T, da) # w.r.t input-to-hidden weights, eq 3
+
+  dprev_h = np.dot(da, Wh.T) # w.r.t prev hidden state, eq 4
+  dWh = np.dot(prev_h.T, da) # hidden-to-hidden weights, eq 5
+
+  db = np.sum(da, axis = 0) # w.r.t bias, eq 6
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
