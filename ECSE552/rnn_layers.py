@@ -144,16 +144,30 @@ def rnn_backward(dh, cache):
   - dWh: Gradient of hidden-to-hidden weights, of shape (H, H)
   - db: Gradient of biases, of shape (H,)
   """
-  dx, dh0, dWx, dWh, db = None, None, None, None, None
-  ##############################################################################
-  # TODO: Implement the backward pass for a vanilla RNN running an entire      #
-  # sequence of data. You should use the rnn_step_backward function that you   #
-  # defined above.                                                             #
-  ##############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
+  N, T, H = dh.shape  # Extract dimensions
+  D = cache[0][0].shape[1]  # Extract input dimension from cache tuple
+
+  dx = np.zeros((N, T, D))  # Initialize gradient of inputs
+  dWx = np.zeros((D, H))  # Initialize gradient of input-to-hidden weights
+  dWh = np.zeros((H, H))  # Initialize gradient of hidden-to-hidden weights
+  db = np.zeros(H)  # Initialize gradient of biases
+  dprev_h = np.zeros((N, H))  # Initialize gradient of previous hidden state
+
+  # Iterate over the reverse of the time steps
+  for t in reversed(range(T)):
+      dht = dh[:, t, :] + dprev_h  # Add upstream gradient to current timestep
+
+      cache_t = cache[t]  # Retrieve cache for current timestep
+
+      dx_t, dprev_h, dWx_t, dWh_t, db_t = rnn_step_backward(dht, cache_t)  # Backward step
+
+      dx[:, t, :] = dx_t  # Store gradient of inputs
+      dWx += dWx_t  # Accumulate gradient of input-to-hidden weights
+      dWh += dWh_t  # Accumulate gradient of hidden-to-hidden weights
+      db += db_t  # Accumulate gradient of biases
+
+  dh0 = dprev_h  # Gradient of initial hidden state
+
   return dx, dh0, dWx, dWh, db
 
 
