@@ -109,7 +109,21 @@ def rnn_forward(x, h0, Wx, Wh, b):
   # input data. You should use the rnn_step_forward function that you defined  #
   # above.                                                                     #
   ##############################################################################
-  pass
+  N, T, D = x.shape  # Extract input dimensions
+  H = h0.shape[1]  # Extract hidden state dimensions
+
+  h = np.zeros((N, T, H))  # Initialize hidden states storage
+  cache = []  # Store values needed for backpropagation
+
+  prev_h = h0  # Set initial hidden state
+
+  for t in range(T):
+    xt = x[:, t, :]  # Extract input for current timestep
+    next_h, cache_t = rnn_step_forward(xt, prev_h, Wx, Wh, b)  # Forward step
+    h[:, t, :] = next_h  # Store hidden state
+    cache.append(cache_t)  # Store cache for backprop
+    prev_h = next_h  # Update previous hidden state
+
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
