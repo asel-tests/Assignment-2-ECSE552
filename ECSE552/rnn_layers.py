@@ -304,11 +304,24 @@ def lstm_forward(x, h0, Wx, Wh, b):
   # TODO: Implement the forward pass for an LSTM over an entire timeseries.   #
   # You should use the lstm_step_forward function that you just defined.      #
   #############################################################################
-  pass
+  N, T, D = x.shape  # Extract input dimensions
+  H = h0.shape[1]  # Extract hidden state dimensions
+
+  h = np.zeros((N, T, H))  # Initialize hidden states storage
+  c_prev = np.zeros((N, H))  # Initialize cell state storage
+  h_prev = h0  # Set initial hidden state
+  cache = []  # Store values needed for backpropagation
+
+  # loop over the time steps
+  for t in range(T):
+    xt = x[:, t, :]  # Extract input for current timestep
+    h_t, c_prev, cache_t = lstm_step_forward(xt, h_prev, c_prev, Wx, Wh, b)  # Forward step
+    h[:, t, :] = h_t  # Store hidden state
+    cache.append(cache_t)  # Store cache for backprop
+    h_prev = h_t  # Update previous hidden state
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
-
   return h, cache
 
 
