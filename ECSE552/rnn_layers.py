@@ -170,39 +170,53 @@ def rnn_backward(dh, cache):
 
   return dx, dh0, dWx, dWh, db
 
+# not sure why this isn't in the original code, but it is used in the LSTM step forward function
+def sigmoid(x):
+    """Numerically stable sigmoid function."""
+    return 1 / (1 + np.exp(-x))
 
-def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
-  """
-  Forward pass for a single timestep of an LSTM.
-  
-  The input data has dimension D, the hidden state has dimension H, and we use
-  a minibatch size of N.
-  
-  Inputs:
-  - x: Input data, of shape (N, D)
-  - prev_h: Previous hidden state, of shape (N, H)
-  - prev_c: previous cell state, of shape (N, H)
-  - Wx: Input-to-hidden weights, of shape (D, 4H)
-  - Wh: Hidden-to-hidden weights, of shape (H, 4H)
-  - b: Biases, of shape (4H,)
-  
-  Returns a tuple of:
-  - next_h: Next hidden state, of shape (N, H)
-  - next_c: Next cell state, of shape (N, H)
-  - cache: Tuple of values needed for backward pass.
-  """
-  next_h, next_c, cache = None, None, None
-  #############################################################################
-  # TODO: Implement the forward pass for a single timestep of an LSTM.        #
-  # You may want to use the numerically stable sigmoid implementation above.  #
-  #############################################################################
-  pass
-  ##############################################################################
-  #                               END OF YOUR CODE                             #
-  ##############################################################################
-  
-  return next_h, next_c, cache
+def lstm_step_forward(x_t, h_prev, c_prev, W_x, W_h, b):
+    """
+    Forward pass for a single timestep of an LSTM.
 
+    Inputs:
+    - x_t: Input data at current timestep, shape (N, D)
+    - h_prev: Previous hidden state, shape (N, H)
+    - c_prev: Previous cell state, shape (N, H)
+    - W_x: Input-to-hidden weight matrix, shape (D, 4H)
+    - W_h: Hidden-to-hidden weight matrix, shape (H, 4H)
+    - b: Bias vector, shape (4H,)
+
+    Returns:
+    - h_t: Next hidden state, shape (N, H)
+    - c_t: Next cell state, shape (N, H)
+    - cache: Tuple of values needed for backward pass.
+    """
+
+    H = h_prev.shape[1]  # Hidden state dimension
+
+    # Compute activation vector
+    a = np.dot(x_t, W_x) + np.dot(h_prev, W_h) + b  
+
+    # Split activation into four components
+    a_i, a_f, a_o, a_g = np.split(a, 4, axis=1)  
+
+    # Compute gate activations
+    i_t = sigmoid(a_i)  # Input gate
+    f_t = sigmoid(a_f)  # Forget gate
+    o_t = sigmoid(a_o)  # Output gate
+    g_t = np.tanh(a_g)  # Block input
+
+    # Compute next cell state
+    c_t = f_t * c_prev + i_t * g_t  
+
+    # Compute next hidden state
+    h_t = o_t * np.tanh(c_t)  
+
+    # Store cache for backward pass
+    cache = (x_t, h_prev, c_prev, W_x, W_h, b, i_t, f_t, o_t, g_t, c_t, h_t)
+
+    return h_t, c_t, cache
 
 def lstm_step_backward(dnext_h, dnext_c, cache):
   """
@@ -228,7 +242,34 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
   # HINT: For sigmoid and tanh you can compute local derivatives in terms of  #
   # the output value from the nonlinearity.                                   #
   #############################################################################
-  pass
+  # retrieve from cache
+  (x_t, h_prev, c_prev, W_x, W_h, b, i_t, f_t, o_t, g_t, c_t, h_t) = cache
+
+  # derivates of the next hidden state through the tanh and output gate
+  do_t = dnext_h * np.tanh(c_t) # eq 1
+  dc_t = dnext_h * o_t * (1 - np.tanh(c_t)**2) + dnext_c # eq 2
+
+  # gradient of the gates
+  di_t = dc_t * g_t # eq 3
+  dg_t = dc_t * i_t # eq 4
+  df_t = dc_t * c_prev # eq 5
+  dprev_c = dc_t * f_t # eq 6
+
+  # derivatives of activation functions
+  da_i = di_t * i_t * (1 - i_t) # eq 7
+  da_f = df_t * f_t * (1 - f_t) # eq 8
+  da_o = do_t * o_t * (1 - o_t) # eq 9
+  da_g = dg_t * (1 - g_t**2) # eq 10
+
+  # concatenate the gradients of the activation functions
+  da = np.hstack((da_i, da_f, da_o, da_g))
+
+  # gradients w.r.t. the input data, weights and biases
+  dx = np.dot(da, W_x.T) # eq 11
+  dWx = np.dot(x_t.T, da) # eq 12
+  dWh = np.dot(h_prev.T, da) # eq 13
+  dprev_h = np.dot(da, W_h.T) # eq 14
+  db = np.sum(da, axis = 0) # eq 15
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
