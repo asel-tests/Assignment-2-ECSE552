@@ -225,18 +225,18 @@ def lstm_step_forward(x_t, h_prev, c_prev, W_x, W_h, b):
     g_t = np.tanh(a_g)  # Block input
 
     # Compute next cell state
-    c_t = f_t * c_prev + i_t * g_t
+    next_c = f_t * c_prev + i_t * g_t
 
     # Compute next hidden state
-    h_t = o_t * np.tanh(c_t)
+    next_h = o_t * np.tanh(next_c)
 
     # Store cache for backward pass
-    cache = (x_t, h_prev, c_prev, W_x, W_h, b, i_t, f_t, o_t, g_t, c_t, h_t)
+    cache = (x_t, h_prev, c_prev, W_x, W_h, b, i_t, f_t, o_t, g_t, next_c, next_h)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
 
-    return h_t, c_t, cache
+    return next_h, next_c, cache
 
 
 def lstm_step_backward(dnext_h, dnext_c, cache):
@@ -294,7 +294,6 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
-
     return dx, dprev_h, dprev_c, dWx, dWh, db
 
 

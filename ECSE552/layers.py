@@ -80,6 +80,7 @@ def conv_forward_naive(x, w, b, conv_param):
       W' = 1 + (W + 2 * pad - WW) / stride
     - cache: (x, w, b, conv_param)
     """
+    out = None
     #############################################################################
     # TODO: Implement the convolutional forward pass.                           #
     # Hint: you can use the function np.pad for padding.                        #
@@ -117,7 +118,6 @@ def conv_forward_naive(x, w, b, conv_param):
 
                   # convolve
                   out[n, f, i, j] = np.sum(x_padded[n, :, h_start:h_end, w_start:w_end] * w[f, :, :, :]) + b[f]
-
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -205,6 +205,7 @@ def max_pool_forward_naive(x, pool_param):
     - out: Output data
     - cache: (x, pool_param)
     """
+    out = None
     #############################################################################
     # TODO: Implement the max pooling forward pass                              #
     #############################################################################
@@ -298,8 +299,8 @@ def max_pool_backward_naive(dout, cache):
                     max_index = np.unravel_index(np.argmax(x_field), x_field.shape)
 
                     # backpropagate the gradient
-                    dx[n, c, h_start:h_end, w_start:w_end][max_index] = dout[n, c, h, w]
-    
+
+                    dx[n, c, h_start + max_index[0], w_start + max_index[1]] += dout[n, c, h, w]
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
